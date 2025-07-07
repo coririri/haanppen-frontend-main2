@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "target": "ES6",
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "strict": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "allowJs": true,
+    "outDir": "./dist", // 출력 파일 경로
+    "rootDir": "./src", // 소스 파일 경로
+    "lib": ["dom", "ES6"]
+  },
+  "include": ["src/**/*", "src/types/**/*.d.ts"],
+  "exclude": ["node_modules"]
+}
