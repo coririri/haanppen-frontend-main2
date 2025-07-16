@@ -135,9 +135,11 @@ function VedioManagementPage() {
       console.log(chunk);
       // form data 형식으로 전송
       const formData = new FormData();
+      const fileName = file.name.split('.');
+      fileName.pop();
       const info = {
         targetDirectoryPath: absolutePath,
-        fileName: file.name.split('.')[0] ?? '기본',
+        fileName: fileName.join('') ?? '기본',
         totalChunkCount: file.size,
         currChunkIndex: start === 0 ? 0 : start + 1,
         isLast: totalChunks - 1 === currentChunk,
