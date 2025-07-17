@@ -139,7 +139,7 @@ function VedioManagementPage() {
       fileName.pop();
       const info = {
         targetDirectoryPath: absolutePath,
-        fileName: fileName.join('') ?? '기본',
+        fileName: fileName.join('.') ?? '기본',
         totalChunkCount: file.size,
         currChunkIndex: start === 0 ? 0 : start + 1,
         isLast: totalChunks - 1 === currentChunk,
@@ -290,7 +290,7 @@ function VedioManagementPage() {
             let deletedDirectory = checkedDirectoryArr.map(
               (value) => directoryDatas[value].fileName,
             );
-            console.log(deletedDirectory);
+
             for (let i = 0; i < checkedDirectoryArr.length; i += 1) {
               if (directoryDatas[checkedDirectoryArr[i]].isDir === false) {
                 const deletedPath = directoryDatas[checkedDirectoryArr[i]].path;

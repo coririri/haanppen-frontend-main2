@@ -348,10 +348,6 @@ function OnlineCourseEnrollmentModal({
                     alert('반 이름을 입력해주세요');
                     return;
                   }
-                  if (/\s/.test(courseName)) {
-                    alert('courseName에는 띄어쓰기를 포함하지 마세요.');
-                    return;
-                  }
 
                   await enrollCourse(
                     courseName,
