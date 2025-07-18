@@ -28,6 +28,7 @@ function OnlineVedioManagement({
 }: OnlineVedioManagementProps) {
   const [deleteVideoCheckModalOpen, setDeleteVideoCheckModalOpen] =
     useState(false);
+  console.log(deleteCheckArr);
   return (
     <div className="flex flex-col items-center justify-center my-6">
       <DeleteCheckModal
@@ -98,6 +99,14 @@ function OnlineVedioManagement({
           <input
             type="checkbox"
             className="w-[20px] h-[20px] align-middle mr-[30px]"
+            checked={deleteCheckArr.every((checked) => checked)}
+            onChange={() => {
+              setDeleteCheckArr(
+                Array(deleteCheckArr.length).fill(
+                  !deleteCheckArr.every((checked) => checked),
+                ),
+              );
+            }}
           />
           <span className="leading-[20px] font-bold w-[60px] text-center text-lg">
             순서
@@ -116,6 +125,7 @@ function OnlineVedioManagement({
           .sort((a, b) => a.videoSequence - b.videoSequence)
           .map((video, index) => (
             <VideoCard
+              key={video.videoId}
               video={video}
               videoIndex={index}
               videoList={videoList}
