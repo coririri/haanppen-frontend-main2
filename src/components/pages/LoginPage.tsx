@@ -90,7 +90,7 @@ function LoginPage() {
 
   return (
     <main className="lg:w-[1440px] md:w-[834px] w-full mx-auto h-[100vh] flex flex-col items-center justify-center">
-      <span>나잖아?</span>
+      <span>나잖아?2</span>
       <AlertModal
         alertModalOpen={iosAlertModalOepn}
         setAlertModalOpen={setIosAlertModalOepn}
