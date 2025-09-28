@@ -26,7 +26,7 @@ function App() {
   const queryClient = new QueryClient();
   ReactModal.setAppElement('#root');
   // build
-
+  // version 2
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
