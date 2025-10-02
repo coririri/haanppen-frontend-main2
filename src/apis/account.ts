@@ -16,7 +16,7 @@ export const putAccountInfo = (userForm: UserFormType) =>
 
 export const getPasswordValidCode = (phoneNumber: string) =>
   axios.post(
-    `${backendUrl}api/accounts/password/verification?phoneNumber=${phoneNumber}`,
+    `${backendUrl}/api/accounts/password/verification?phoneNumber=${phoneNumber}`,
   );
 
 export const validePasswordCode = (
@@ -24,7 +24,7 @@ export const validePasswordCode = (
   verificationCode: string,
 ) =>
   axios.put(
-    `${backendUrl}api/accounts/password/verification?phoneNumber=${phoneNumber}&verificationCode=${verificationCode}`,
+    `${backendUrl}/api/accounts/password/verification?phoneNumber=${phoneNumber}&verificationCode=${verificationCode}`,
   );
 
 export default getMyAccountInfo;

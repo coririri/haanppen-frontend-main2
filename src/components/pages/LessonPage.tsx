@@ -52,7 +52,7 @@ function LessonPage() {
   useEffect(() => {
     if (videoData.length > 0)
       setVideoUrl(
-        `${backendUrl}api/media/stream?resourceId=${videoData[selectedVideoIndex].mediaSource}`,
+        `${backendUrl}/api/media/stream?resourceId=${videoData[selectedVideoIndex].mediaSource}`,
       );
   }, [selectedVideoIndex, videoData]);
 

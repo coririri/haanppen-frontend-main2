@@ -31,7 +31,7 @@ function OnlineLessonPage() {
           ) {
             setVideoData({
               title: data.onlineVideoDetails[i].mediaName,
-              src: `${backendUrl}api/media/stream?resourceId=${data.onlineVideoDetails[i].mediaSrc}`,
+              src: `${backendUrl}/api/media/stream?resourceId=${data.onlineVideoDetails[i].mediaSrc}`,
               attachments: data.onlineVideoDetails[i].attachmentDetails,
             });
             break;
