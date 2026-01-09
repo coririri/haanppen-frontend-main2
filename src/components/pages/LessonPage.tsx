@@ -131,7 +131,6 @@ function LessonPage() {
                 src={videoUrl}
                 width="360px"
                 height="240px"
-                autoPlay
                 muted
                 playsInline
                 controls

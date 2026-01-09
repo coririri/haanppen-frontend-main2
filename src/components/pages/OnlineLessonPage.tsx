@@ -68,7 +68,6 @@ function OnlineLessonPage() {
               src={videoData.src}
               width="360px"
               height="240px"
-              autoPlay
               muted
               playsInline
               controls
