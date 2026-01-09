@@ -70,6 +70,7 @@ function OnlineLessonPage() {
               height="240px"
               autoPlay
               muted
+              playsInline
               controls
             />
 

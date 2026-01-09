@@ -133,6 +133,7 @@ function LessonPage() {
                 height="240px"
                 autoPlay
                 muted
+                playsInline
                 controls
               />
               <div className="mt-2">
