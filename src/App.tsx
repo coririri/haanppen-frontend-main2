@@ -20,7 +20,7 @@ import ServerErrorPage from './components/pages/ServerErrorPage';
 import NetworkErrorPage from './components/pages/NetworkErrorPage';
 import PrivacyPage from './components/pages/PrivacyPage';
 
-// 배포1
+// 배포2
 
 function App() {
   const queryClient = new QueryClient();
