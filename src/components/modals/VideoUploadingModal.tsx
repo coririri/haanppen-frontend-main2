@@ -4,15 +4,13 @@ import { LoadingType } from '../../types/loadingType';
 
 interface VideoUploadingModalProps {
   modalOpen: boolean;
-  uploadingInfo: LoadingType;
+  uploadingInfoList: LoadingType[];
 }
 
 function VideoUploadingModal({
   modalOpen,
-  uploadingInfo,
+  uploadingInfoList,
 }: VideoUploadingModalProps) {
-  /* overlay는 모달 창 바깥 부분을 처리하는 부분이고,
-content는 모달 창부분이라고 생각하면 쉬울 것이다 */
   const customModalStyles: ReactModal.Styles = {
     overlay: {
       backgroundColor: ' rgba(0, 0, 0, 0.4)',
@@ -24,42 +22,49 @@ content는 모달 창부분이라고 생각하면 쉬울 것이다 */
       left: '0',
     },
     content: {
-      width: '450px',
-      height: '200px',
+      width: '480px',
+      maxHeight: '70vh',
       zIndex: '150',
       position: 'absolute',
       top: '50%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      borderRadius: '50px',
+      borderRadius: '20px',
       boxShadow: '2px 2px 2px rgba(0, 0, 0, 0.25)',
       backgroundColor: 'white',
-      justifyContent: 'center',
       overflow: 'auto',
     },
   };
 
-  const loadingBarWidth = `${Math.round(
-    ((uploadingInfo.current + 1) / uploadingInfo.end) * 100,
-  )}%`;
-
   return (
     <ReactModal isOpen={modalOpen} style={customModalStyles}>
-      <div className="relative mx-auto">
-        <section className="flex flex-col text-center justify-center w-[400px] h-[150px] mx-auto">
-          <h1 className="font-bold text-xl leading-10 text-[#151B26] mb-[20px] flicker">
-            Uploading....
-          </h1>
-          <div
-            aria-hidden="true"
-            className="w-[300px] h-[12px] bg-[#e5eaef] rounded-xl relative overflow-hidden mx-auto"
-          >
-            <span
-              className="block absolute top-0 left-0  h-[12px] rounded-xl bg-[#13CE66]"
-              style={{ width: loadingBarWidth }}
-            />
-          </div>
-        </section>
+      <div className="p-8">
+        <h1 className="font-bold text-xl text-center text-[#151B26] mb-6 flicker">
+          Uploading....
+        </h1>
+        <div className="flex flex-col gap-5">
+          {uploadingInfoList.map((item) => (
+            <div key={item.fileName} className="flex flex-col gap-1">
+              <span className="text-sm font-bold truncate max-w-[380px]">
+                {item.fileName}
+              </span>
+              <div
+                aria-hidden="true"
+                className="w-full h-[12px] bg-[#e5eaef] rounded-xl relative overflow-hidden"
+              >
+                <span
+                  className="block absolute top-0 left-0 h-[12px] rounded-xl bg-[#13CE66] transition-all duration-300"
+                  style={{
+                    width: `${Math.min(
+                      Math.round(((item.current + 1) / item.end) * 100),
+                      100,
+                    )}%`,
+                  }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </ReactModal>
   );

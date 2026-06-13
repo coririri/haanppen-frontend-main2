@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import OnlineCourseManagementPage from './OnlineCourseManagementPage';
 import OfflineCourseManagementPage from './OfflineCourseManagementPage';
+import TestPaperCourseManagementPage from './TestPaperCourseManagementPage';
 import SlideBar from '../molecules/SlideBar';
 
 function CourseManagementPage() {
   const [classManagementType, setClassManagementType] = useState<boolean[]>([
     true,
+    false,
     false,
   ]);
 
@@ -16,6 +18,7 @@ function CourseManagementPage() {
           num={2}
           firstText="학원강좌 반"
           secondText="단과강좌 반"
+          thirdText="문제집 반"
           isClickArr={classManagementType}
           setIsClickArr={setClassManagementType}
           type="course"
@@ -23,6 +26,7 @@ function CourseManagementPage() {
       </div>
       {classManagementType[0] && <OfflineCourseManagementPage />}
       {classManagementType[1] && <OnlineCourseManagementPage />}
+      {classManagementType[2] && <TestPaperCourseManagementPage />}
     </div>
   );
 }

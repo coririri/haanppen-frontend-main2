@@ -24,7 +24,7 @@ function SlideBar({
   isStudent,
   type = '',
 }: SlideBarProps) {
-  const [leftPosition, setLeftPosition] = useState('left-[130px]');
+  const [leftPosition, setLeftPosition] = useState('left-[10px]');
   const [twoLeftPosition, setTwoLeftPosition] = useState('left-[20px]');
   const [courseLeftPosition, setCourseLeftPosition] = useState('left-[10px]');
   const [fourLeftPosition, setFourLeftPosition] = useState('left-[35px]');
@@ -103,7 +103,7 @@ function SlideBar({
             isClick={isClickArr[0]}
             moreStyle="w-[120px] mr-4"
             handleClick={() => {
-              setIsClickArr([true, false]);
+              setIsClickArr(thirdText ? [true, false, false] : [true, false]);
               setCourseLeftPosition('left-[10px]');
             }}
           >
@@ -115,12 +115,26 @@ function SlideBar({
             isClick={isClickArr[1]}
             moreStyle="w-[120px] mr-4"
             handleClick={() => {
-              setIsClickArr([false, true]);
+              setIsClickArr(thirdText ? [false, true, false] : [false, true]);
               setCourseLeftPosition('left-[150px]');
             }}
           >
             {secondText}
           </TextButton>
+
+          {thirdText && (
+            <TextButton
+              color="white"
+              isClick={isClickArr[2]}
+              moreStyle="w-[120px] mr-4"
+              handleClick={() => {
+                setIsClickArr([false, false, true]);
+                setCourseLeftPosition('left-[290px]');
+              }}
+            >
+              {thirdText}
+            </TextButton>
+          )}
         </div>
         <div
           className={`transition-[left] relative h-1 w-24 mt-1 bg-hpBlue ${courseLeftPosition}`}
@@ -208,7 +222,7 @@ function SlideBar({
   }
   if (num === 3) {
     return (
-      <div className="w-[836px]">
+      <div className="">
         <div>
           <TextButton
             color="white"
@@ -216,7 +230,7 @@ function SlideBar({
             moreStyle="w-[180px] mr-4"
             handleClick={() => {
               setIsClickArr([true, false, false]);
-              setLeftPosition('left-[130px]');
+              setLeftPosition('left-[10px]');
             }}
           >
             {firstText}
@@ -228,7 +242,7 @@ function SlideBar({
             moreStyle="w-[180px] mr-4"
             handleClick={() => {
               setIsClickArr([false, true, false]);
-              setLeftPosition('left-[330px]');
+              setLeftPosition('left-[205px]');
             }}
           >
             {secondText}
@@ -240,7 +254,7 @@ function SlideBar({
             moreStyle="w-[180px] mr-4"
             handleClick={() => {
               setIsClickArr([false, false, true]);
-              setLeftPosition('left-[525px]');
+              setLeftPosition('left-[400px]');
             }}
           >
             {thirdText}
