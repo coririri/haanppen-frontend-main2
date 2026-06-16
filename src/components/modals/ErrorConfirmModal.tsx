@@ -13,7 +13,7 @@ const customModalStyles: ReactModal.Styles = {
   },
   content: {
     width: '300px',
-    height: '200px',
+    height: '160px',
     zIndex: '150',
     position: 'absolute',
     top: '50%',
@@ -45,7 +45,7 @@ function ErrorConfirmModal({
       onRequestClose={() => setErrorModalOpen(false)}
       style={customModalStyles}
     >
-      <div className="flex flex-col justify-center items-center">
+      <div className="flex flex-col justify-center items-center h-full">
         <h2 className="text-xl font-bold mb-4">경고</h2>
         <p className="mb-2 text-center">{errorMessage}</p>
         <div className="flex justify-center w-full">

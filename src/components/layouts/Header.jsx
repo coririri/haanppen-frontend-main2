@@ -1,4 +1,3 @@
-import React from 'react';
 import { BsFillPersonFill } from 'react-icons/bs';
 import { Link, useNavigate } from 'react-router-dom';
 

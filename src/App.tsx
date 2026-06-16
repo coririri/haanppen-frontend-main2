@@ -15,6 +15,7 @@ import MyClassPage from './components/pages/MyClassPage';
 import LessonPage from './components/pages/LessonPage';
 import LessonOverviewPage from './components/pages/LessonOverviewPage';
 import OnlineLessonPage from './components/pages/OnlineLessonPage';
+import TestPaperLessonPage from './components/pages/TestPaperLessonPage';
 import PreviewClassPage from './components/pages/PreviewClassPage';
 import ServerErrorPage from './components/pages/ServerErrorPage';
 import NetworkErrorPage from './components/pages/NetworkErrorPage';
@@ -45,6 +46,7 @@ function App() {
             <Route path="preview-class" element={<PreviewClassPage />} />
             <Route path="lesson" element={<LessonPage />} />
             <Route path="online-lesson" element={<OnlineLessonPage />} />
+            <Route path="test-paper-lesson" element={<TestPaperLessonPage />} />
             <Route path="lesson-overview" element={<LessonOverviewPage />} />
           </Route>
           {/* 단독 레이아웃 */}

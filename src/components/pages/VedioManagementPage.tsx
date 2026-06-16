@@ -12,6 +12,7 @@ import CreateFolderModal from '../modals/CreateFolderModal';
 import enrollVideo, { deleteVideo } from '../../apis/video';
 import VideoUploadingModal from '../modals/VideoUploadingModal';
 import DeleteCheckModal from '../modals/DeleteCheckModal';
+import ErrorConfirmModal from '../modals/ErrorConfirmModal';
 import { DirectoryType } from '../../types/directoryType';
 import { LoadingType } from '../../types/loadingType';
 // import enrollVideo from '../../apis/video';
@@ -29,18 +30,21 @@ function VedioManagementPage() {
   const [isFolderCreateModalOpen, setIsFolderCreateModalOpen] =
     useState<boolean>(false); // 디렉토리 생성 모달 Open 상태 값
   const [checkedDirectoryArr, setCheckedDirectoryArr] = useState<number[]>([]); // 선택된 디렉토리 리스트를 위한 데이터를 디렉토리 이름으로 가지고 있는 리스트 상태 값
-  const [uploadingInfo, setUploadingInfo] = useState<LoadingType>({
-    current: 0,
-    end: 0,
-  });
+  const [uploadingInfoList, setUploadingInfoList] = useState<LoadingType[]>([]);
   const [isVideoUploadingModalOpen, setIsVideoUploadingModalOpen] =
     useState<boolean>(false);
   const [deleteFolderCheckModalOpen, setDeleteFolderCheckModalOpen] =
     useState<boolean>(false);
   const [deleteVideoCheckModalOpen, setDeleteVideoCheckModalOpen] =
     useState<boolean>(false);
+  const [errorModalOpen, setErrorModalOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const [uiStatus, setUiStatus] = useState<'line' | 'grid'>('line');
+  const [sortConfig, setSortConfig] = useState<{
+    key: 'name' | 'date';
+    direction: 'asc' | 'desc';
+  }>({ key: 'name', direction: 'asc' });
 
   const videoRef = useRef<HTMLInputElement>(null);
 
@@ -94,125 +98,130 @@ function VedioManagementPage() {
 
   const handleEnrollVideo = async () => {
     if (videoRef.current === null || videoRef.current.files === null) return;
+    const files = Array.from(videoRef.current.files);
+    if (files.length === 0) return;
+
     const chunkSize = 1024 * 1024; // 1MB
-    const file = videoRef.current.files[0];
-    if (file === undefined) return;
-
     const tempAbsolutePath = breadscrumArray.join('/');
-    let absolutePath = '';
+    const absolutePath =
+      tempAbsolutePath !== '/' ? tempAbsolutePath.slice(1) : tempAbsolutePath;
 
-    if (tempAbsolutePath !== '/') {
-      absolutePath = `${tempAbsolutePath.slice(1)}`;
-    } else {
-      absolutePath = `${tempAbsolutePath}`;
-    }
-
-    // 영상 총 길이
-    const video = document.createElement('video');
-    video.preload = 'metadata';
-    video.src = URL.createObjectURL(file);
-    const videoRuntime = await getVideoDuration(file);
-
-    // total size 계산
-    const totalChunks = Math.ceil(file.size / chunkSize);
-    let currentChunk = 0;
-    setUploadingInfo({
-      current: 0,
-      end: totalChunks,
-    });
-
-    // 동영상 업로드 로딩창 열림
+    setUploadingInfoList(
+      files.map((file) => ({
+        fileName: file.name,
+        current: 0,
+        end: Math.ceil(file.size / chunkSize),
+      })),
+    );
     setIsVideoUploadingModalOpen(true);
 
-    // chunk file 전송
-    const sendNextChunk = async () => {
-      // chunk size 만큼 데이터 분할
+    const uploadFile = async (file: File, fileIndex: number) => {
+      const videoRuntime = await getVideoDuration(file);
+      const totalChunks = Math.ceil(file.size / chunkSize);
+      let currentChunk = 0;
 
-      const start = currentChunk * chunkSize;
-      const end = Math.min(start + chunkSize, file.size);
+      const sendNextChunk = async (): Promise<void> => {
+        const start = currentChunk * chunkSize;
+        const end = Math.min(start + chunkSize, file.size);
+        const chunk = file.slice(start, end);
 
-      const chunk = file.slice(start, end);
-      console.log(chunk);
-      // form data 형식으로 전송
-      const formData = new FormData();
-      const fileName = file.name.split('.');
-      fileName.pop();
-      const info = {
-        targetDirectoryPath: absolutePath,
-        fileName: fileName.join('.') ?? '기본',
-        totalChunkCount: file.size,
-        currChunkIndex: start === 0 ? 0 : start + 1,
-        isLast: totalChunks - 1 === currentChunk,
-        extension: '.mp4',
-        mediaDuration: videoRuntime,
-      };
-      console.log(info);
-      formData.append('media', chunk);
-      formData.append(
-        'info',
-        new Blob([JSON.stringify(info)], { type: 'application/json' }),
-      );
-      console.log(info);
+        const formData = new FormData();
+        const nameParts = file.name.split('.');
+        nameParts.pop();
+        const chunkInfo = {
+          targetDirectoryPath: absolutePath,
+          fileName: nameParts.join('.') ?? '기본',
+          totalChunkCount: file.size,
+          currChunkIndex: start === 0 ? 0 : start + 1,
+          isLast: totalChunks - 1 === currentChunk,
+          extension: '.mp4',
+          mediaDuration: videoRuntime,
+        };
+        formData.append('media', chunk);
+        formData.append(
+          'info',
+          new Blob([JSON.stringify(chunkInfo)], { type: 'application/json' }),
+        );
 
-      try {
-        const response = await enrollVideo(formData);
+        try {
+          const response = await enrollVideo(formData);
 
-        if (response.status === 201) {
-          setIsVideoUploadingModalOpen(false);
-          alert('파일 전송이 끝났습니다');
-
-          try {
-            const { data } = await getDirectory(absolutePath);
-            setDirectoryDatas(data);
-          } catch (e) {
-            console.log(e);
+          if (response.status === 202) {
+            currentChunk += 1;
+            setUploadingInfoList((prev) =>
+              prev.map((item, i) =>
+                i === fileIndex ? { ...item, current: currentChunk } : item,
+              ),
+            );
+            await sendNextChunk();
           }
-        } else if (response.status === 202) {
-          currentChunk += 1;
-          setUploadingInfo((prev) => ({
-            ...prev,
-            current: currentChunk,
-          }));
-          sendNextChunk();
-        }
-      } catch (e: unknown) {
-        // 에러가 AxiosError 타입인지 확인
-        if (e instanceof Error && 'response' in e) {
-          const errorResponse = (e as any).response;
+        } catch (e: unknown) {
+          if (e instanceof Error && 'response' in e) {
+            const errorResponse = (e as any).response;
 
-          if (errorResponse && errorResponse.status === 406) {
-            console.log('406 Not Acceptable 에러 발생:', errorResponse.data);
-
-            // 서버로부터 chunkIndex를 받아옴
-            const { nextChunkIndex } = errorResponse.data;
-            console.log(nextChunkIndex);
-
-            // currentChunk 계산
-            currentChunk = (nextChunkIndex - 1) / 1024 / 1024;
-
-            // 업로드 상태 업데이트
-            setUploadingInfo((prev) => ({
-              ...prev,
-              current: currentChunk,
-            }));
-
-            // 다음 청크 전송
-            sendNextChunk();
+            if (errorResponse && errorResponse.status === 406) {
+              const { nextChunkIndex, remainSize } = errorResponse.data;
+              if (remainSize === 0) {
+                // 서버가 모든 데이터를 수신했으나 isLast=true를 요구하는 경우
+                currentChunk = totalChunks - 1;
+              } else {
+                currentChunk = Math.round((nextChunkIndex - 1) / chunkSize);
+              }
+              setUploadingInfoList((prev) =>
+                prev.map((item, i) =>
+                  i === fileIndex ? { ...item, current: currentChunk } : item,
+                ),
+              );
+              await sendNextChunk();
+            } else {
+              console.log('알 수 없는 에러:', e);
+              alert(`${file.name} 업로드에 실패했습니다.`);
+            }
           } else {
             console.log('알 수 없는 에러:', e);
-            alert('영상 업로드에 실패 하였습니다.');
-            setIsVideoUploadingModalOpen(false);
+            alert(`${file.name} 업로드에 실패했습니다.`);
           }
-        } else {
-          console.log('알 수 없는 에러:', e);
-          alert('영상 업로드에 실패 하였습니다.');
-          setIsVideoUploadingModalOpen(false);
         }
-      }
+      };
+
+      await sendNextChunk();
     };
 
-    sendNextChunk();
+    try {
+      for (let i = 0; i < files.length; i += 1) {
+        // eslint-disable-next-line no-await-in-loop
+        await uploadFile(files[i], i);
+      }
+      setIsVideoUploadingModalOpen(false);
+      alert('파일 전송이 끝났습니다');
+      try {
+        const { data } = await getDirectory(absolutePath);
+        setDirectoryDatas(data);
+      } catch (e) {
+        console.log(e);
+      }
+    } catch (e) {
+      console.log(e);
+      setIsVideoUploadingModalOpen(false);
+    }
   };
+
+  const handleSort = (key: 'name' | 'date') => {
+    setSortConfig((prev) =>
+      prev.key === key
+        ? { key, direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+        : { key, direction: 'asc' },
+    );
+  };
+
+  const sortedDirectoryDatas = [...directoryDatas].sort((a, b) => {
+    if (sortConfig.key === 'name') {
+      const cmp = a.fileName.localeCompare(b.fileName, 'ko');
+      return sortConfig.direction === 'asc' ? cmp : -cmp;
+    }
+    const cmp = a.createdTime.localeCompare(b.createdTime);
+    return sortConfig.direction === 'asc' ? cmp : -cmp;
+  });
 
   console.log(breadscrumArray);
 
@@ -227,17 +236,17 @@ function VedioManagementPage() {
             return;
           }
           let deletedDirectory = checkedDirectoryArr.map(
-            (value) => directoryDatas[value].fileName,
+            (value) => sortedDirectoryDatas[value].fileName,
           );
           try {
             for (let i = 0; i < checkedDirectoryArr.length; i += 1) {
-              if (directoryDatas[checkedDirectoryArr[i]].isDir === true) {
+              if (sortedDirectoryDatas[checkedDirectoryArr[i]].isDir === true) {
                 const deletedForName =
-                  directoryDatas[checkedDirectoryArr[i]].fileName;
+                  sortedDirectoryDatas[checkedDirectoryArr[i]].fileName;
                 await handleDeleteDirectory(deletedForName);
                 deletedDirectory = deletedDirectory.filter(
                   (value) =>
-                    directoryDatas[checkedDirectoryArr[i]].fileName !== value,
+                    sortedDirectoryDatas[checkedDirectoryArr[i]].fileName !== value,
                 );
               }
             }
@@ -250,7 +259,7 @@ function VedioManagementPage() {
               setCheckedDirectoryArr(
                 data
                   .map((directory: DirectoryType, index: number) => {
-                    if (deletedDirectory.includes(directory.fileName))
+                    if (deletedDirectory.indexOf(directory.fileName) !== -1)
                       return index;
                     return null;
                   })
@@ -263,7 +272,7 @@ function VedioManagementPage() {
               setCheckedDirectoryArr(
                 data
                   .map((directory: DirectoryType, index: number) => {
-                    if (deletedDirectory.includes(directory.fileName))
+                    if (deletedDirectory.indexOf(directory.fileName) !== -1)
                       return index;
                     return null;
                   })
@@ -288,17 +297,17 @@ function VedioManagementPage() {
           }
           try {
             let deletedDirectory = checkedDirectoryArr.map(
-              (value) => directoryDatas[value].fileName,
+              (value) => sortedDirectoryDatas[value].fileName,
             );
 
             for (let i = 0; i < checkedDirectoryArr.length; i += 1) {
-              if (directoryDatas[checkedDirectoryArr[i]].isDir === false) {
-                const deletedPath = directoryDatas[checkedDirectoryArr[i]].path;
+              if (sortedDirectoryDatas[checkedDirectoryArr[i]].isDir === false) {
+                const deletedPath = sortedDirectoryDatas[checkedDirectoryArr[i]].path;
                 await deleteVideo(deletedPath);
 
                 deletedDirectory = deletedDirectory.filter(
                   (value) =>
-                    directoryDatas[checkedDirectoryArr[i]].fileName !== value,
+                    sortedDirectoryDatas[checkedDirectoryArr[i]].fileName !== value,
                 );
               }
             }
@@ -311,7 +320,7 @@ function VedioManagementPage() {
               setCheckedDirectoryArr(
                 data
                   .map((directory: DirectoryType, index: number) => {
-                    if (deletedDirectory.includes(directory.fileName))
+                    if (deletedDirectory.indexOf(directory.fileName) !== -1)
                       return index;
                     return null;
                   })
@@ -324,15 +333,23 @@ function VedioManagementPage() {
               setCheckedDirectoryArr(
                 data
                   .map((directory: DirectoryType, index: number) => {
-                    if (deletedDirectory.includes(directory.fileName))
+                    if (deletedDirectory.indexOf(directory.fileName) !== -1)
                       return index;
                     return null;
                   })
                   .filter((value: null | number) => value !== null),
               );
             }
-          } catch (e) {
-            console.log(e);
+          } catch (e: unknown) {
+            const err = e as { response?: { data?: { errorDescription?: string; details?: string } } };
+            const msg =
+              err?.response?.data?.details ??
+              err?.response?.data?.errorDescription ??
+              '삭제 중 오류가 발생했습니다.';
+            setErrorMessage(msg);
+            setErrorModalOpen(true);
+            setDeleteVideoCheckModalOpen(false);
+            return;
           }
           setDeleteVideoCheckModalOpen(false);
         }}
@@ -345,7 +362,12 @@ function VedioManagementPage() {
       />
       <VideoUploadingModal
         modalOpen={isVideoUploadingModalOpen}
-        uploadingInfo={uploadingInfo}
+        uploadingInfoList={uploadingInfoList}
+      />
+      <ErrorConfirmModal
+        errorModalOpen={errorModalOpen}
+        setErrorModalOpen={setErrorModalOpen}
+        errorMessage={errorMessage}
       />
       <div className="px-24">
         <div className="mt-8 flex items-center text-black">
@@ -430,6 +452,7 @@ function VedioManagementPage() {
                 type="file"
                 accept="video/mp4"
                 capture="environment"
+                multiple
                 className="hidden"
                 onChange={handleEnrollVideo}
               />
@@ -478,15 +501,37 @@ function VedioManagementPage() {
               <div className="mt-6 mr-2">
                 <hr />
                 <div className="w-[1000px] flex justify-between py-2">
-                  <div className="ml-8">
+                  <div className="ml-8 flex items-center">
                     <span className="text-md">종류</span>
-                    <span className="ml-6 text-md">이름</span>
+                    <button
+                      type="button"
+                      className="ml-6 text-md flex items-center gap-1 hover:text-hpBlue"
+                      onClick={() => handleSort('name')}
+                    >
+                      이름
+                      {sortConfig.key === 'name' && (
+                        <span className="text-xs">
+                          {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </button>
                   </div>
-                  <span className="mr-6  text-md">생성 날짜</span>
+                  <button
+                    type="button"
+                    className="mr-6 text-md flex items-center gap-1 hover:text-hpBlue"
+                    onClick={() => handleSort('date')}
+                  >
+                    생성 날짜
+                    {sortConfig.key === 'date' && (
+                      <span className="text-xs">
+                        {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                      </span>
+                    )}
+                  </button>
                 </div>
                 <hr />
 
-                {directoryDatas.map((data, index) => {
+                {sortedDirectoryDatas.map((data, index) => {
                   if (data.isDir === true) {
                     return (
                       <Folder
@@ -580,7 +625,7 @@ function VedioManagementPage() {
           {directoryError === '' ? (
             <div className="flex justify-end px-4">
               <div className="grow grid grid-cols-4 gap-y-1 gap-x-0 mt-6">
-                {directoryDatas.map((data, index) => {
+                {sortedDirectoryDatas.map((data, index) => {
                   if (data.isDir === true) {
                     return (
                       <Folder

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { getOwnCourses } from '../../apis/course';
 import { getLessonsByClassId } from '../../apis/lesson';
 import DateSelector from '../molecules/DateSelector';
@@ -8,8 +8,12 @@ import LessonList from '../organisms/LessonList';
 import Pagenation from '../organisms/Pagenation';
 import DropdownMenu from '../molecules/DropdownMenu';
 import { getOwnOnlineCourses } from '../../apis/onlineCourse';
+import { getTestPapers } from '../../apis/testPaper';
+import { getTestPaperLectureByTestPaperId } from '../../apis/testPaperLecture';
+import { TestPaperLectureType } from '../../types/testPaperLectureType';
 import OnlineLessonList from '../organisms/OnlineLessonList';
 import { CourseType } from '../../types/courseType';
+import { TestPaperType } from '../../types/testPaperType';
 import { PageInfoType } from '../../types/page';
 import { OfflineLessonType } from '../../types/offlineLessonType';
 
@@ -32,28 +36,37 @@ function MyClassPage() {
     currentPage: 0,
     pageSize: 8,
   });
+  const [testPaperLecture, setTestPaperLecture] =
+    useState<TestPaperLectureType | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const offlienCourseResponse = await getOwnCourses();
-        const onlineCourseResponse = await getOwnOnlineCourses();
-        setCourseList([
-          ...offlienCourseResponse.data.map((course: CourseType) => ({
-            ...course,
-            type: 'offline',
-          })),
-          ...onlineCourseResponse.data.map((course: CourseType) => ({
-            ...course,
-            type: 'online',
-          })),
+        const [offlineRes, onlineRes, testPaperRes] = await Promise.all([
+          getOwnCourses(),
+          getOwnOnlineCourses(),
+          getTestPapers(),
         ]);
+        const offlineCourses = offlineRes.data.map((course: CourseType) => ({
+          ...course,
+          type: 'offline',
+        }));
+        const onlineCourses = onlineRes.data.map((course: CourseType) => ({
+          ...course,
+          type: 'online',
+        }));
+        const testPaperCourses = testPaperRes.data.map((tp: TestPaperType) => ({
+          courseId: tp.testPaperId,
+          courseName: tp.testPaperName,
+          teacherPreview: { teacherName: tp.teacherName, teacherId: tp.teacherId },
+          studentSize: tp.studentCount,
+          type: 'testPaper',
+        }));
+        const combined = [...offlineCourses, ...onlineCourses, ...testPaperCourses];
+        setCourseList(combined);
 
-        if (offlienCourseResponse.data.length === 0) {
-          searchParams.set('courseType', 'offline');
-          setSearchParams(searchParams);
-        }
-        searchParams.set('courseType', 'online');
+        const firstType = combined[0]?.type ?? 'offline';
+        searchParams.set('courseType', firstType);
         setSearchParams(searchParams);
       } catch (e) {
         console.log(e);
@@ -84,17 +97,23 @@ function MyClassPage() {
   }, [selectedClassindex, selectedCategoryindex, courseList, page]);
 
   useEffect(() => {
-    console.log(courseList);
-    if (courseList[selectedClassindex]?.type === 'offline') {
-      searchParams.set('courseType', 'offline');
-      setSearchParams(searchParams);
-    }
-
-    if (courseList[selectedClassindex]?.type === 'online') {
-      searchParams.set('courseType', 'online');
+    const type = courseList[selectedClassindex]?.type;
+    if (type === 'offline' || type === 'online' || type === 'testPaper') {
+      searchParams.set('courseType', type);
       setSearchParams(searchParams);
     }
   }, [courseList, selectedClassindex]);
+
+  useEffect(() => {
+    if (courseList[selectedClassindex]?.type !== 'testPaper') {
+      setTestPaperLecture(null);
+      return;
+    }
+    const testPaperId = courseList[selectedClassindex].courseId;
+    getTestPaperLectureByTestPaperId(testPaperId)
+      .then(({ data }) => setTestPaperLecture(data))
+      .catch(() => setTestPaperLecture(null));
+  }, [selectedClassindex, courseList]);
 
   console.log(courseList);
   if (courseList.length === 0)
@@ -157,6 +176,46 @@ function MyClassPage() {
           selectedClassindex={selectedClassindex}
           onlineCourseId={courseList[selectedClassindex].courseId}
         />
+      )}
+      {searchParams.get('courseType') === 'testPaper' && (
+        <div className="flex flex-col items-center mt-8 gap-2">
+          <span className="text-xl font-bold">
+            {courseList[selectedClassindex]?.courseName}
+          </span>
+          <span className="text-lg text-hpGray">
+            담당 선생님:{' '}
+            {courseList[selectedClassindex]?.teacherPreview?.teacherName}
+          </span>
+          {testPaperLecture ? (
+            <div className="mt-4 w-full max-w-[600px]">
+              <p className="text-lg font-bold text-center">
+                {testPaperLecture.lectureName}
+              </p>
+              {testPaperLecture.description && (
+                <p className="text-sm text-gray-500 text-center mt-1">
+                  {testPaperLecture.description}
+                </p>
+              )}
+              <div className="mt-6 grid grid-cols-5 gap-3">
+                {testPaperLecture.videos.map((video, i) => (
+                  <Link
+                    key={video.path || String(i)}
+                    to={`/test-paper-lesson?lectureId=${testPaperLecture.lectureId}&questionIndex=${i + 1}&lectureName=${encodeURIComponent(testPaperLecture.lectureName)}&testPaperName=${encodeURIComponent(testPaperLecture.testPaperName)}`}
+                    className={`flex items-center justify-center h-12 rounded-lg border-2 font-bold text-sm transition-colors ${
+                      video.path
+                        ? 'border-hpBlue text-hpBlue hover:bg-hpBlue hover:text-white'
+                        : 'border-gray-200 text-gray-300 pointer-events-none'
+                    }`}
+                  >
+                    문항 {i + 1}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <p className="mt-6 text-gray-400">등록된 수업이 없습니다.</p>
+          )}
+        </div>
       )}
 
       {searchParams.get('courseType') === 'offline' && (

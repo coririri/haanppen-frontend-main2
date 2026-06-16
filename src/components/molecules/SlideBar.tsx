@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import TextButton from '../atoms/TextButton';
 
 interface SlideBarProps {
@@ -24,19 +23,15 @@ function SlideBar({
   isStudent,
   type = '',
 }: SlideBarProps) {
-  const [leftPosition, setLeftPosition] = useState('left-[130px]');
-  const [twoLeftPosition, setTwoLeftPosition] = useState('left-[20px]');
-  const [courseLeftPosition, setCourseLeftPosition] = useState('left-[10px]');
-  const [fourLeftPosition, setFourLeftPosition] = useState('left-[35px]');
-
-  useEffect(() => {
-    if (isClickArr[0] === true) {
-      setTwoLeftPosition('left-[20px]');
-    } else {
-      setTwoLeftPosition('left-[215px]');
-    }
-  }, [isClickArr]);
   if (num === 4) {
+    const barLeft = isClickArr[3]
+      ? 'left-[625px]'
+      : isClickArr[2]
+        ? 'left-[425px]'
+        : isClickArr[1]
+          ? 'left-[230px]'
+          : 'left-[35px]';
+
     return (
       <div className="w-[836px]">
         <div>
@@ -44,57 +39,49 @@ function SlideBar({
             color="white"
             isClick={isClickArr[0]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([true, false, false, false]);
-              setFourLeftPosition('left-[35px]');
-            }}
+            handleClick={() => setIsClickArr([true, false, false, false])}
           >
             {firstText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[1]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, true, false, false]);
-              setFourLeftPosition('left-[230px]');
-            }}
+            handleClick={() => setIsClickArr([false, true, false, false])}
           >
             {secondText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[2]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, false, true, false]);
-              setFourLeftPosition('left-[425px]');
-            }}
+            handleClick={() => setIsClickArr([false, false, true, false])}
           >
             {thirdText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[3]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, false, false, true]);
-              setFourLeftPosition('left-[625px]');
-            }}
+            handleClick={() => setIsClickArr([false, false, false, true])}
           >
             {fourthText}
           </TextButton>
         </div>
         <div
-          className={`transition-[left] relative h-1 w-40 mt-1 bg-hpBlue ${fourLeftPosition}`}
+          className={`transition-[left] relative h-1 w-40 mt-1 bg-hpBlue ${barLeft}`}
         />
       </div>
     );
   }
+
   if (type === 'course') {
+    const barLeft = isClickArr[2]
+      ? 'left-[290px]'
+      : isClickArr[1]
+        ? 'left-[150px]'
+        : 'left-[10px]';
+
     return (
       <div>
         <div>
@@ -102,28 +89,35 @@ function SlideBar({
             color="white"
             isClick={isClickArr[0]}
             moreStyle="w-[120px] mr-4"
-            handleClick={() => {
-              setIsClickArr([true, false]);
-              setCourseLeftPosition('left-[10px]');
-            }}
+            handleClick={() =>
+              setIsClickArr(thirdText ? [true, false, false] : [true, false])
+            }
           >
             {firstText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[1]}
             moreStyle="w-[120px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, true]);
-              setCourseLeftPosition('left-[150px]');
-            }}
+            handleClick={() =>
+              setIsClickArr(thirdText ? [false, true, false] : [false, true])
+            }
           >
             {secondText}
           </TextButton>
+          {thirdText && (
+            <TextButton
+              color="white"
+              isClick={isClickArr[2]}
+              moreStyle="w-[120px] mr-4"
+              handleClick={() => setIsClickArr([false, false, true])}
+            >
+              {thirdText}
+            </TextButton>
+          )}
         </div>
         <div
-          className={`transition-[left] relative h-1 w-24 mt-1 bg-hpBlue ${courseLeftPosition}`}
+          className={`transition-[left] relative h-1 w-24 mt-1 bg-hpBlue ${barLeft}`}
         />
       </div>
     );
@@ -134,37 +128,26 @@ function SlideBar({
       return (
         <div>
           <div>
-            {/* 첫 번째 버튼 */}
             <div>
               <TextButton
                 color="white"
                 moreStyle={`w-[120px] mb-2 mr-1 transition-transform transform hover:scale-105 duration-300 ${
-                  isClickArr[0]
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 text-black'
+                  isClickArr[0] ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
                 }`}
                 isClick={isClickArr[0]}
-                handleClick={() => {
-                  setIsClickArr([true, false]);
-                }}
+                handleClick={() => setIsClickArr([true, false])}
                 textMoreStyle="leading-[16px] text-md"
               >
                 {firstText}
               </TextButton>
             </div>
-
-            {/* 두 번째 버튼 */}
             <TextButton
               color="white"
-              moreStyle={`w-[120px]  transition-transform transform hover:scale-105 duration-300 ${
-                isClickArr[1]
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-black'
+              moreStyle={`w-[120px] transition-transform transform hover:scale-105 duration-300 ${
+                isClickArr[1] ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
               }`}
               isClick={isClickArr[1]}
-              handleClick={() => {
-                setIsClickArr([false, true]);
-              }}
+              handleClick={() => setIsClickArr([false, true])}
               textMoreStyle="leading-[16px] text-md"
             >
               {secondText}
@@ -173,6 +156,9 @@ function SlideBar({
         </div>
       );
     }
+
+    const barLeft = isClickArr[0] ? 'left-[20px]' : 'left-[215px]';
+
     return (
       <div>
         <div>
@@ -180,74 +166,63 @@ function SlideBar({
             color="white"
             isClick={isClickArr[0]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([true, false]);
-              setTwoLeftPosition('left-[20px]');
-            }}
+            handleClick={() => setIsClickArr([true, false])}
           >
             {firstText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[1]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, true]);
-              setTwoLeftPosition('left-[215px]');
-            }}
+            handleClick={() => setIsClickArr([false, true])}
           >
             {secondText}
           </TextButton>
         </div>
         <div
-          className={`transition-[left] relative h-1 w-36 mt-1 bg-hpBlue ${twoLeftPosition}`}
+          className={`transition-[left] relative h-1 w-36 mt-1 bg-hpBlue ${barLeft}`}
         />
       </div>
     );
   }
+
   if (num === 3) {
+    const barLeft = isClickArr[2]
+      ? 'left-[400px]'
+      : isClickArr[1]
+        ? 'left-[205px]'
+        : 'left-[10px]';
+
     return (
-      <div className="w-[836px]">
+      <div>
         <div>
           <TextButton
             color="white"
             isClick={isClickArr[0]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([true, false, false]);
-              setLeftPosition('left-[130px]');
-            }}
+            handleClick={() => setIsClickArr([true, false, false])}
           >
             {firstText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[1]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, true, false]);
-              setLeftPosition('left-[330px]');
-            }}
+            handleClick={() => setIsClickArr([false, true, false])}
           >
             {secondText}
           </TextButton>
-
           <TextButton
             color="white"
             isClick={isClickArr[2]}
             moreStyle="w-[180px] mr-4"
-            handleClick={() => {
-              setIsClickArr([false, false, true]);
-              setLeftPosition('left-[525px]');
-            }}
+            handleClick={() => setIsClickArr([false, false, true])}
           >
             {thirdText}
           </TextButton>
         </div>
         <div
-          className={`transition-[left] relative h-1 w-40 mt-1 bg-hpBlue ${leftPosition}`}
+          className={`transition-[left] relative h-1 w-40 mt-1 bg-hpBlue ${barLeft}`}
         />
       </div>
     );
@@ -256,35 +231,26 @@ function SlideBar({
   return (
     <div>
       <div>
-        {/* 첫 번째 버튼 */}
         <div>
           <TextButton
             color="white"
             moreStyle={`w-[120px] mb-2 mr-1 transition-transform transform hover:scale-105 duration-300 ${
-              isClickArr[0]
-                ? 'bg-blue-500 text-white'
-                : 'bg-gray-200 text-black'
+              isClickArr[0] ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
             }`}
             isClick={isClickArr[0]}
-            handleClick={() => {
-              setIsClickArr([true, false]);
-            }}
+            handleClick={() => setIsClickArr([true, false])}
             textMoreStyle="leading-[16px] text-md"
           >
             {firstText}
           </TextButton>
         </div>
-
-        {/* 두 번째 버튼 */}
         <TextButton
           color="white"
-          moreStyle={`w-[120px]  transition-transform transform hover:scale-105 duration-300 ${
+          moreStyle={`w-[120px] transition-transform transform hover:scale-105 duration-300 ${
             isClickArr[1] ? 'bg-blue-500 text-white' : 'bg-gray-200 text-black'
           }`}
           isClick={isClickArr[1]}
-          handleClick={() => {
-            setIsClickArr([false, true]);
-          }}
+          handleClick={() => setIsClickArr([false, true])}
           textMoreStyle="leading-[16px] text-md"
         >
           {secondText}

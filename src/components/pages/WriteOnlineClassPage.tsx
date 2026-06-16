@@ -77,6 +77,8 @@ function WriteOnlineClassPage({
         setIsLoading(false);
         return;
       }
+      console.log(data);
+      console.log(selectedClassindex);
       const onlineLessonRespose = await getOnlineLesson(
         data[selectedClassindex].courseId,
       );
