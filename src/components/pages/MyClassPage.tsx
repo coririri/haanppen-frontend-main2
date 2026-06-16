@@ -8,8 +8,10 @@ import LessonList from '../organisms/LessonList';
 import Pagenation from '../organisms/Pagenation';
 import DropdownMenu from '../molecules/DropdownMenu';
 import { getOwnOnlineCourses } from '../../apis/onlineCourse';
+import { getTestPapers } from '../../apis/testPaper';
 import OnlineLessonList from '../organisms/OnlineLessonList';
 import { CourseType } from '../../types/courseType';
+import { TestPaperType } from '../../types/testPaperType';
 import { PageInfoType } from '../../types/page';
 import { OfflineLessonType } from '../../types/offlineLessonType';
 
@@ -36,24 +38,31 @@ function MyClassPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const offlienCourseResponse = await getOwnCourses();
-        const onlineCourseResponse = await getOwnOnlineCourses();
-        setCourseList([
-          ...offlienCourseResponse.data.map((course: CourseType) => ({
-            ...course,
-            type: 'offline',
-          })),
-          ...onlineCourseResponse.data.map((course: CourseType) => ({
-            ...course,
-            type: 'online',
-          })),
+        const [offlineRes, onlineRes, testPaperRes] = await Promise.all([
+          getOwnCourses(),
+          getOwnOnlineCourses(),
+          getTestPapers(),
         ]);
+        const offlineCourses = offlineRes.data.map((course: CourseType) => ({
+          ...course,
+          type: 'offline',
+        }));
+        const onlineCourses = onlineRes.data.map((course: CourseType) => ({
+          ...course,
+          type: 'online',
+        }));
+        const testPaperCourses = testPaperRes.data.map((tp: TestPaperType) => ({
+          courseId: tp.testPaperId,
+          courseName: tp.testPaperName,
+          teacherPreview: { teacherName: tp.teacherName, teacherId: tp.teacherId },
+          studentSize: tp.studentCount,
+          type: 'testPaper',
+        }));
+        const combined = [...offlineCourses, ...onlineCourses, ...testPaperCourses];
+        setCourseList(combined);
 
-        if (offlienCourseResponse.data.length === 0) {
-          searchParams.set('courseType', 'offline');
-          setSearchParams(searchParams);
-        }
-        searchParams.set('courseType', 'online');
+        const firstType = combined[0]?.type ?? 'offline';
+        searchParams.set('courseType', firstType);
         setSearchParams(searchParams);
       } catch (e) {
         console.log(e);
@@ -84,14 +93,9 @@ function MyClassPage() {
   }, [selectedClassindex, selectedCategoryindex, courseList, page]);
 
   useEffect(() => {
-    console.log(courseList);
-    if (courseList[selectedClassindex]?.type === 'offline') {
-      searchParams.set('courseType', 'offline');
-      setSearchParams(searchParams);
-    }
-
-    if (courseList[selectedClassindex]?.type === 'online') {
-      searchParams.set('courseType', 'online');
+    const type = courseList[selectedClassindex]?.type;
+    if (type === 'offline' || type === 'online' || type === 'testPaper') {
+      searchParams.set('courseType', type);
       setSearchParams(searchParams);
     }
   }, [courseList, selectedClassindex]);
@@ -157,6 +161,16 @@ function MyClassPage() {
           selectedClassindex={selectedClassindex}
           onlineCourseId={courseList[selectedClassindex].courseId}
         />
+      )}
+      {searchParams.get('courseType') === 'testPaper' && (
+        <div className="flex flex-col items-center mt-8 gap-2">
+          <span className="text-xl font-bold">
+            {courseList[selectedClassindex]?.courseName}
+          </span>
+          <span className="text-lg text-hpGray">
+            담당 선생님: {courseList[selectedClassindex]?.teacherPreview?.teacherName}
+          </span>
+        </div>
       )}
 
       {searchParams.get('courseType') === 'offline' && (
