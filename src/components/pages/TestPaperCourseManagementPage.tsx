@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AiOutlineSmile, AiFillEdit } from 'react-icons/ai';
 import IconButton from '../atoms/IconButton';
 import TestPaperCourseList from '../organisms/TestPaperCourseList';
@@ -6,54 +6,70 @@ import TestPaperCourseEnrollmentModal from '../modals/TestPaperCourseEnrollmentM
 import TeacherDropdown from '../molecules/TeacherDropdown';
 import DeleteCheckModal from '../modals/DeleteCheckModal';
 import { TeacherType } from '../../types/teacherType';
-import { CourseType } from '../../types/courseType';
-
-const STATIC_TEACHERS: TeacherType[] = [
-  { id: 1, name: '김선생', phoneNumber: '010-0000-0001', registeredDateTime: '2024-01-01T00:00:00' },
-  { id: 2, name: '이선생', phoneNumber: '010-0000-0002', registeredDateTime: '2024-01-01T00:00:00' },
-];
-
-const STATIC_COURSES: CourseType[] = [
-  {
-    courseId: 1,
-    courseName: '수학 문제집 반',
-    studentSize: 10,
-    teacherPreview: { teacherId: 1, teacherName: '김선생' },
-  },
-  {
-    courseId: 2,
-    courseName: '영어 문제집 반',
-    studentSize: 8,
-    teacherPreview: { teacherId: 2, teacherName: '이선생' },
-  },
-];
+import { TestPaperType } from '../../types/testPaperType';
+import getAllTeachers from '../../apis/teacher';
+import { getTestPapers, deleteTestPaper } from '../../apis/testPaper';
+import { getAllStudents } from '../../apis/student';
+import { useCourseStudentStore } from '../../store/courseStudentsStore';
 
 function TestPaperCourseManagementPage() {
   const [enrollmentModalOpen, setEnrollmentModalOpen] =
     useState<boolean>(false);
   const [selectedIndex, setSelectedIndex] = useState<number>(0);
-  const [courseListData, setCourseListData] =
-    useState<CourseType[]>(STATIC_COURSES);
+  const [courseListData, setCourseListData] = useState<TestPaperType[]>([]);
+  const [teacherArr, setTeacherArr] = useState<TeacherType[]>([]);
   const [deletedCoursesIndex, setDeletedCoursesIndex] = useState<number[]>([]);
   const [deleteCheckModalOpen, setDeleteCheckModalOpen] =
     useState<boolean>(false);
-  console.log(deletedCoursesIndex);
+  const { setEntireStudents } = useCourseStudentStore();
+
+  const fetchCourseList = async () => {
+    try {
+      const { data } = await getTestPapers();
+      setCourseListData(data);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      try {
+        const [teacherRes, courseRes, studentRes] = await Promise.all([
+          getAllTeachers(),
+          getTestPapers(),
+          getAllStudents(),
+        ]);
+        setTeacherArr(teacherRes.data);
+        setCourseListData(courseRes.data);
+        setEntireStudents(studentRes.data);
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    fetchAll();
+  }, []);
+
   return (
     <div className="w-full text-center">
       <TestPaperCourseEnrollmentModal
         enrollmentModalOpen={enrollmentModalOpen}
         setEnrollmentModalOpen={setEnrollmentModalOpen}
-        setCourseListData={setCourseListData}
-        teacherArr={STATIC_TEACHERS}
-        selectedIndex={selectedIndex}
+        onSuccess={fetchCourseList}
+        teacherArr={teacherArr}
       />
       <DeleteCheckModal
         deleteCheckModalOpen={deleteCheckModalOpen}
         setDeleteCheckModalOpen={setDeleteCheckModalOpen}
         handleDelete={async () => {
-          setCourseListData((prev) =>
-            prev.filter((course) => deletedCoursesIndex.indexOf(course.courseId) === -1),
-          );
+          try {
+            await Promise.all(
+              deletedCoursesIndex.map((id) => deleteTestPaper(id)),
+            );
+            await fetchCourseList();
+          } catch (e) {
+            console.log(e);
+          }
           setDeleteCheckModalOpen(false);
           setDeletedCoursesIndex([]);
         }}
@@ -87,7 +103,7 @@ function TestPaperCourseManagementPage() {
             <TeacherDropdown
               textArr={[
                 '선택 없음',
-                ...STATIC_TEACHERS.map((teacher) => teacher.name),
+                ...teacherArr.map((teacher) => teacher.name),
               ]}
               selectedIndex={selectedIndex}
               setSelectedIndex={setSelectedIndex}
@@ -97,11 +113,10 @@ function TestPaperCourseManagementPage() {
       </div>
       <div className="mt-6">
         <TestPaperCourseList
-          courseListData={courseListData}
+          testPaperList={courseListData}
           setDeletedCoursesIndex={setDeletedCoursesIndex}
-          setCourseListData={setCourseListData}
-          teacherArr={STATIC_TEACHERS}
-          selectedIndex={selectedIndex}
+          onSuccess={fetchCourseList}
+          teacherArr={teacherArr}
         />
       </div>
     </div>

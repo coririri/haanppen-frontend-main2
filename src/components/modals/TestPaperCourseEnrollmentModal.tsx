@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ReactModal from 'react-modal';
 import { AiFillEdit } from 'react-icons/ai';
 import IconButton from '../atoms/IconButton';
 import StudentListByClass from '../organisms/StudentListByClass';
 import DropdownMenu from '../molecules/DropdownMenu';
 import { TeacherType } from '../../types/teacherType';
-import { CourseType } from '../../types/courseType';
 import { StudentByGradeType } from '../../types/studentType';
+import { enrollTestPaper } from '../../apis/testPaper';
+import { useCourseStudentStore } from '../../store/courseStudentsStore';
 
 const customModalStyles: ReactModal.Styles = {
   overlay: {
@@ -40,18 +41,17 @@ const emptyGradeList = (): StudentByGradeType[] =>
 interface TestPaperCourseEnrollmentModalProps {
   enrollmentModalOpen: boolean;
   setEnrollmentModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setCourseListData: React.Dispatch<React.SetStateAction<CourseType[]>>;
+  onSuccess: () => Promise<void>;
   teacherArr: TeacherType[];
-  selectedIndex: number;
 }
 
 function TestPaperCourseEnrollmentModal({
   enrollmentModalOpen,
   setEnrollmentModalOpen,
-  setCourseListData,
+  onSuccess,
   teacherArr,
-  selectedIndex,
 }: TestPaperCourseEnrollmentModalProps) {
+  const { entireStudents, entireStudentsNum } = useCourseStudentStore();
   const [selectedTeacherindex, setSelectedTeacherindexIndex] =
     useState<number>(0);
   const [courseName, setCourseName] = useState<string>('');
@@ -62,13 +62,27 @@ function TestPaperCourseEnrollmentModal({
   const [differntCourseStudents, setDifferntCourseStudents] =
     useState<StudentByGradeType[]>(emptyGradeList());
 
+  useEffect(() => {
+    if (!enrollmentModalOpen) return;
+    setSelectedTeacherindexIndex(0);
+    setCourseName('');
+    setMyStudentsNum(0);
+    setMyCourseStudents(emptyGradeList());
+    setDifferentStudentsNum(entireStudentsNum);
+    setDifferntCourseStudents(
+      entireStudents.map((g) => ({ grade: g.grade, students: [...g.students] })),
+    );
+  }, [enrollmentModalOpen]);
+
   const resetModalState = () => {
     setSelectedTeacherindexIndex(0);
     setCourseName('');
     setMyStudentsNum(0);
-    setDifferentStudentsNum(0);
+    setDifferentStudentsNum(entireStudentsNum);
     setMyCourseStudents(emptyGradeList());
-    setDifferntCourseStudents(emptyGradeList());
+    setDifferntCourseStudents(
+      entireStudents.map((g) => ({ grade: g.grade, students: [...g.students] })),
+    );
   };
 
   return (
@@ -92,6 +106,7 @@ function TestPaperCourseEnrollmentModal({
               className="w-[180px] h-[40px] border-solid border-black border-[1.3px] rounded-md pl-2 text-sm font-bold"
               id="classModalName"
               placeholder="이름을 입력해주세요."
+              value={courseName}
               onChange={(e) => {
                 setCourseName(e.target.value);
               }}
@@ -155,7 +170,7 @@ function TestPaperCourseEnrollmentModal({
               bgColor="white"
               icon={<AiFillEdit size="20px" />}
               text="완료"
-              handleClick={() => {
+              handleClick={async () => {
                 if (selectedTeacherindex === 0) {
                   alert('선생님을 선택해주세요');
                   return;
@@ -164,18 +179,23 @@ function TestPaperCourseEnrollmentModal({
                   alert('반 이름을 입력해주세요');
                   return;
                 }
-                const newCourse: CourseType = {
-                  courseId: Date.now(),
-                  courseName,
-                  studentSize: myStudentsNum,
-                  teacherPreview: {
-                    teacherId: teacherArr[selectedTeacherindex - 1].id,
-                    teacherName: teacherArr[selectedTeacherindex - 1].name,
-                  },
-                };
-                setCourseListData((prev) => [...prev, newCourse]);
-                resetModalState();
-                setEnrollmentModalOpen(false);
+                try {
+                  const studentIds = myCourseStudents.reduce<number[]>(
+                    (acc, grade) => acc.concat(grade.students.map((s) => s.id)),
+                    [],
+                  );
+                  await enrollTestPaper(
+                    courseName,
+                    teacherArr[selectedTeacherindex - 1].id,
+                    studentIds,
+                  );
+                  await onSuccess();
+                  resetModalState();
+                  setEnrollmentModalOpen(false);
+                } catch (e) {
+                  console.log(e);
+                  alert('반 등록에 실패했습니다.');
+                }
               }}
             />
           </div>

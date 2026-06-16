@@ -4,9 +4,11 @@ import { AiFillEdit } from 'react-icons/ai';
 import IconButton from '../atoms/IconButton';
 import StudentListByClass from '../organisms/StudentListByClass';
 import DropdownMenu from '../molecules/DropdownMenu';
-import { CourseType } from '../../types/courseType';
 import { TeacherType } from '../../types/teacherType';
 import { StudentByGradeType } from '../../types/studentType';
+import { putTestPaper, putTestPaperStudents, getTestPaperById } from '../../apis/testPaper';
+import { useCourseStudentStore } from '../../store/courseStudentsStore';
+import { TestPaperStudentType } from '../../types/testPaperType';
 
 const customModalStyles: ReactModal.Styles = {
   overlay: {
@@ -40,24 +42,23 @@ const emptyGradeList = (): StudentByGradeType[] =>
 interface TestPaperCourseModificationModalProps {
   enrollmentModalOpen: boolean;
   setEnrollmentModalOpen: React.Dispatch<React.SetStateAction<boolean>>;
-  setCourseListData: React.Dispatch<React.SetStateAction<CourseType[]>>;
+  onSuccess: () => Promise<void>;
   courseId: number;
   initialCourseName: string;
   initialTeacherName: string;
   teacherArr: TeacherType[];
-  selectedIndex: number;
 }
 
 function TestPaperCourseModificationModal({
   enrollmentModalOpen,
   setEnrollmentModalOpen,
-  setCourseListData,
+  onSuccess,
   courseId,
   initialCourseName,
   initialTeacherName,
   teacherArr,
-  selectedIndex,
 }: TestPaperCourseModificationModalProps) {
+  const { entireStudents, entireStudentsNum } = useCourseStudentStore();
   const [selectedTeacherindex, setSelectedTeacherindex] = useState<number>(0);
   const [courseName, setCourseName] = useState<string>(initialCourseName);
   const [myStudentsNum, setMyStudentsNum] = useState<number>(0);
@@ -70,11 +71,36 @@ function TestPaperCourseModificationModal({
   >(emptyGradeList());
 
   useEffect(() => {
-    if (enrollmentModalOpen) {
-      setCourseName(initialCourseName);
-      const idx = teacherArr.findIndex((t) => t.name === initialTeacherName);
-      setSelectedTeacherindex(idx >= 0 ? idx + 1 : 0);
-    }
+    if (!enrollmentModalOpen) return;
+
+    setCourseName(initialCourseName);
+    const idx = teacherArr.findIndex((t) => t.name === initialTeacherName);
+    setSelectedTeacherindex(idx >= 0 ? idx + 1 : 0);
+
+    getTestPaperById(courseId)
+      .then(({ data }) => {
+        const tpStudents: TestPaperStudentType[] = data.students ?? [];
+        const tpIdSet = new Set<number>(tpStudents.map((s: TestPaperStudentType) => s.studentId));
+
+        const myList: StudentByGradeType[] = emptyGradeList();
+        const otherList: StudentByGradeType[] = emptyGradeList();
+
+        entireStudents.forEach((gradeGroup) => {
+          gradeGroup.students.forEach((student) => {
+            if (tpIdSet.has(student.id)) {
+              myList[gradeGroup.grade].students.push(student);
+            } else {
+              otherList[gradeGroup.grade].students.push(student);
+            }
+          });
+        });
+
+        setMyCourseStudents(myList);
+        setDifferntCourseStudents(otherList);
+        setMyStudentsNum(tpStudents.length);
+        setDifferentStudentsNum(entireStudentsNum - tpStudents.length);
+      })
+      .catch((e) => console.log(e));
   }, [enrollmentModalOpen]);
 
   const resetModalState = () => {
@@ -172,34 +198,34 @@ function TestPaperCourseModificationModal({
               bgColor="white"
               icon={<AiFillEdit size="20px" />}
               text="완료"
-              handleClick={() => {
+              handleClick={async () => {
                 if (courseName === '') {
                   alert('반 이름을 입력해주세요');
                   return;
                 }
-                const selectedTeacher =
-                  selectedTeacherindex > 0
-                    ? teacherArr[selectedTeacherindex - 1]
-                    : null;
-                setCourseListData((prev) =>
-                  prev.map((course) =>
-                    course.courseId === courseId
-                      ? {
-                          ...course,
-                          courseName,
-                          studentSize: myStudentsNum,
-                          teacherPreview: selectedTeacher
-                            ? {
-                                teacherId: selectedTeacher.id,
-                                teacherName: selectedTeacher.name,
-                              }
-                            : course.teacherPreview,
-                        }
-                      : course,
-                  ),
-                );
-                resetModalState();
-                setEnrollmentModalOpen(false);
+                if (selectedTeacherindex === 0) {
+                  alert('선생님을 선택해주세요');
+                  return;
+                }
+                try {
+                  const studentIds = myCourseStudents.reduce<number[]>(
+                    (acc, grade) =>
+                      acc.concat(grade.students.map((s) => s.id)),
+                    [],
+                  );
+                  await putTestPaper(
+                    courseId,
+                    courseName,
+                    teacherArr[selectedTeacherindex - 1].id,
+                  );
+                  await putTestPaperStudents(courseId, studentIds);
+                  await onSuccess();
+                  resetModalState();
+                  setEnrollmentModalOpen(false);
+                } catch (e) {
+                  console.log(e);
+                  alert('반 수정에 실패했습니다.');
+                }
               }}
             />
           </div>
