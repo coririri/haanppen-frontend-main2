@@ -12,6 +12,7 @@ import CreateFolderModal from '../modals/CreateFolderModal';
 import enrollVideo, { deleteVideo } from '../../apis/video';
 import VideoUploadingModal from '../modals/VideoUploadingModal';
 import DeleteCheckModal from '../modals/DeleteCheckModal';
+import ErrorConfirmModal from '../modals/ErrorConfirmModal';
 import { DirectoryType } from '../../types/directoryType';
 import { LoadingType } from '../../types/loadingType';
 // import enrollVideo from '../../apis/video';
@@ -36,6 +37,8 @@ function VedioManagementPage() {
     useState<boolean>(false);
   const [deleteVideoCheckModalOpen, setDeleteVideoCheckModalOpen] =
     useState<boolean>(false);
+  const [errorModalOpen, setErrorModalOpen] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
   const [uiStatus, setUiStatus] = useState<'line' | 'grid'>('line');
   const [sortConfig, setSortConfig] = useState<{
@@ -337,8 +340,16 @@ function VedioManagementPage() {
                   .filter((value: null | number) => value !== null),
               );
             }
-          } catch (e) {
-            console.log(e);
+          } catch (e: unknown) {
+            const err = e as { response?: { data?: { errorDescription?: string; details?: string } } };
+            const msg =
+              err?.response?.data?.details ??
+              err?.response?.data?.errorDescription ??
+              '삭제 중 오류가 발생했습니다.';
+            setErrorMessage(msg);
+            setErrorModalOpen(true);
+            setDeleteVideoCheckModalOpen(false);
+            return;
           }
           setDeleteVideoCheckModalOpen(false);
         }}
@@ -352,6 +363,11 @@ function VedioManagementPage() {
       <VideoUploadingModal
         modalOpen={isVideoUploadingModalOpen}
         uploadingInfoList={uploadingInfoList}
+      />
+      <ErrorConfirmModal
+        errorModalOpen={errorModalOpen}
+        setErrorModalOpen={setErrorModalOpen}
+        errorMessage={errorMessage}
       />
       <div className="px-24">
         <div className="mt-8 flex items-center text-black">
