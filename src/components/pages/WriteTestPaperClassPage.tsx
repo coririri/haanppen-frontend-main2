@@ -1,31 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SetURLSearchParams } from 'react-router-dom';
 import { AiFillEdit, AiOutlineFolder } from 'react-icons/ai';
 import DropdownMenu from '../molecules/DropdownMenu';
 import IconButton from '../atoms/IconButton';
 import DeleteCheckModal from '../modals/DeleteCheckModal';
 import getDirectory from '../../apis/directory';
-import { CourseType } from '../../types/courseType';
+import { TestPaperType } from '../../types/testPaperType';
+import { getTestPapers } from '../../apis/testPaper';
 
 interface WriteTestPaperClassPageProps {
   searchParams: URLSearchParams;
   setSearchParams: SetURLSearchParams;
 }
-
-const STATIC_COURSES: CourseType[] = [
-  {
-    courseId: 1,
-    courseName: '수학 문제집 반',
-    studentSize: 10,
-    teacherPreview: { teacherId: 1, teacherName: '김선생' },
-  },
-  {
-    courseId: 2,
-    courseName: '영어 문제집 반',
-    studentSize: 8,
-    teacherPreview: { teacherId: 2, teacherName: '이선생' },
-  },
-];
 
 interface TestPaperData {
   title: string;
@@ -40,7 +26,14 @@ function WriteTestPaperClassPage({
   const [selectedClassindex, setSelectedClassindex] = useState<number>(
     Number(searchParams.get('classIndex') ?? 0),
   );
+  const [courses, setCourses] = useState<TestPaperType[]>([]);
   const [isCreated, setIsCreated] = useState<boolean>(false);
+
+  useEffect(() => {
+    getTestPapers()
+      .then(({ data }) => setCourses(data))
+      .catch((e) => console.log(e));
+  }, []);
   const [deleteCheckModalOpen, setDeleteCheckModalOpen] =
     useState<boolean>(false);
 
@@ -145,7 +138,7 @@ function WriteTestPaperClassPage({
         <DropdownMenu
           type="search"
           size="long"
-          textArr={STATIC_COURSES.map((course) => course.courseName)}
+          textArr={courses.map((course: TestPaperType) => course.testPaperName)}
           selectedIndex={selectedClassindex}
           setSelectedIndex={setSelectedClassindex}
           searchParams={searchParams}

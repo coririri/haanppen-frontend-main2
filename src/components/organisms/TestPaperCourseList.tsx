@@ -1,21 +1,19 @@
-import { CourseType } from '../../types/courseType';
+import { TestPaperType } from '../../types/testPaperType';
 import { TeacherType } from '../../types/teacherType';
 import TestPaperCourseItem from '../molecules/TestPaperCourseItem';
 
 interface TestPaperCourseListType {
-  courseListData: CourseType[];
+  testPaperList: TestPaperType[];
   setDeletedCoursesIndex: React.Dispatch<React.SetStateAction<number[]>>;
-  setCourseListData: React.Dispatch<React.SetStateAction<CourseType[]>>;
+  onSuccess: () => Promise<void>;
   teacherArr: TeacherType[];
-  selectedIndex: number;
 }
 
 function TestPaperCourseList({
-  courseListData,
+  testPaperList,
   setDeletedCoursesIndex,
-  setCourseListData,
+  onSuccess,
   teacherArr,
-  selectedIndex,
 }: TestPaperCourseListType) {
   return (
     <div className="w-full">
@@ -36,17 +34,16 @@ function TestPaperCourseList({
       </div>
       <hr className="h-[0.5px] border-0 bg-black w-[900px] mx-auto mt-2" />
       <div className="w-[800px] mx-auto mt-4">
-        {courseListData?.map((course) => (
+        {testPaperList?.map((tp) => (
           <TestPaperCourseItem
-            key={course?.courseId}
-            className={course?.courseName}
-            studentNum={course?.studentSize}
-            teacherName={course?.teacherPreview.teacherName}
-            courseId={course?.courseId}
+            key={tp.testPaperId}
+            testPaperId={tp.testPaperId}
+            testPaperName={tp.testPaperName}
+            studentCount={tp.studentCount}
+            teacherName={tp.teacherName}
             setDeletedCoursesIndex={setDeletedCoursesIndex}
-            setCourseListData={setCourseListData}
+            onSuccess={onSuccess}
             teacherArr={teacherArr}
-            selectedIndex={selectedIndex}
           />
         ))}
       </div>
