@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { SetURLSearchParams } from 'react-router-dom';
+import { SetURLSearchParams, useNavigate } from 'react-router-dom';
 import { AiFillEdit, AiOutlineFolder } from 'react-icons/ai';
 import DropdownMenu from '../molecules/DropdownMenu';
 import IconButton from '../atoms/IconButton';
@@ -83,6 +83,33 @@ function WriteTestPaperClassPage({
   const [description, setDescription] = useState<string>('');
   const [videoLinks, setVideoLinks] = useState<string[]>(['']);
   const [folderPath, setFolderPath] = useState<string>('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const pathFromUrl = searchParams.get('folderPath');
+    if (!pathFromUrl) return;
+
+    setFolderPath(pathFromUrl);
+
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('folderPath');
+    setSearchParams(newParams, { replace: true });
+
+    loadVideosFromDirectory(pathFromUrl)
+      .then((links) => {
+        if (links.length === 1 && links[0] === '') {
+          alert('숫자 파일명의 영상을 찾을 수 없습니다.');
+          return;
+        }
+        setVideoLinks(links);
+      })
+      .catch((e: unknown) => {
+        const serverMessage = (
+          e as { response?: { data?: { errorDescription?: string } } }
+        )?.response?.data?.errorDescription;
+        alert(serverMessage ?? '영상을 불러오는 데 실패했습니다.');
+      });
+  }, [searchParams]);
 
   useEffect(() => {
     getTestPapers()
@@ -145,26 +172,6 @@ function WriteTestPaperClassPage({
     setVideoLinks((prev) =>
       prev.map((link, i) => (i === index ? value : link)),
     );
-  };
-
-  const handleLoadVideos = async () => {
-    if (folderPath.trim() === '') {
-      alert('폴더 경로를 입력해주세요.');
-      return;
-    }
-    try {
-      const links = await loadVideosFromDirectory(folderPath);
-      if (links.length === 1 && links[0] === '') {
-        alert('숫자 파일명의 영상을 찾을 수 없습니다.');
-        return;
-      }
-      setVideoLinks(links);
-    } catch (e: unknown) {
-      const serverMessage =
-        (e as { response?: { data?: { errorDescription?: string } } })
-          ?.response?.data?.errorDescription;
-      alert(serverMessage ?? '영상을 불러오는 데 실패했습니다.');
-    }
   };
 
   const handleCreate = async () => {
@@ -290,7 +297,11 @@ function WriteTestPaperClassPage({
             <button
               type="button"
               className="shrink-0 h-[36px] px-3 text-sm font-bold border border-gray-400 rounded-md hover:bg-gray-100"
-              onClick={handleLoadVideos}
+              onClick={() =>
+                navigate(
+                  `/vedio-management?breadscrum=/&returnTo=/enroll-class&returnClassIndex=${selectedClassindex}&returnClassType=testpaper`,
+                )
+              }
             >
               영상 불러오기
             </button>

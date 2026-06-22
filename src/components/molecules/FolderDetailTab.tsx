@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FcFolder } from 'react-icons/fc';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import TextButton from '../atoms/TextButton';
 import { dateTimeToDateAndTimes } from '../../utils/dateTimeToDate';
 import getDirectory, { changeDirectoryName } from '../../apis/directory';
@@ -17,6 +18,12 @@ function FolderDetailTab({
   breadscrumArray,
   setDirectoryDatas,
 }: FolderDetailTabProps) {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get('returnTo');
+  const returnClassIndex = searchParams.get('returnClassIndex');
+  const returnClassType = searchParams.get('returnClassType');
+
   const [folderName, setFolderName] = useState(folderData.fileName);
 
   useEffect(() => {
@@ -95,6 +102,26 @@ function FolderDetailTab({
           <span className="block w-[100px] text-[#BFBFBF]">수정 날짜</span>
           <span className="font-bold">2030-08-20 08:02:04</span>
         </div> */}
+        {returnTo && (
+          <div className="w-[9rem] mx-auto mt-24 mb-4">
+            <TextButton
+              color="gray"
+              moreStyle="w-[9rem]"
+              handleClick={() => {
+                const absolutePath = breadscrumArray.join('/');
+                const folderPath =
+                  absolutePath === '/'
+                    ? `/${folderData.fileName}`
+                    : `${absolutePath.slice(1)}/${folderData.fileName}`;
+                navigate(
+                  `${returnTo}?classType=${returnClassType}&classIndex=${returnClassIndex}&folderPath=${encodeURIComponent(folderPath)}`,
+                );
+              }}
+            >
+              폴더 선택
+            </TextButton>
+          </div>
+        )}
       </div>
     </div>
   );
