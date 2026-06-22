@@ -216,7 +216,7 @@ function VedioManagementPage() {
 
   const sortedDirectoryDatas = [...directoryDatas].sort((a, b) => {
     if (sortConfig.key === 'name') {
-      const cmp = a.fileName.localeCompare(b.fileName, 'ko');
+      const cmp = a.fileName.localeCompare(b.fileName, 'ko', { numeric: true });
       return sortConfig.direction === 'asc' ? cmp : -cmp;
     }
     const cmp = a.createdTime.localeCompare(b.createdTime);
